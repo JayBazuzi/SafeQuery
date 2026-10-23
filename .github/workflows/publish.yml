@@ -1,0 +1,28 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # lets GitHub issue the OIDC token for nuget.org trusted publishing
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+      - run: ./build_and_test.sh
+      - name: Pack (version from tag, v1.2.3 -> 1.2.3)
+        run: dotnet pack src/SafeQuery --configuration Release --no-build -p:Version="${GITHUB_REF_NAME#v}" --output nupkgs
+      # Get a short-lived NuGet API key (valid 1 hour), so do this right before the push
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: ${{ secrets.NUGET_USER }}
+      - name: Push to nuget.org
+        run: dotnet nuget push "nupkgs/*.nupkg" --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json

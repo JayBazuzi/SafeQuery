@@ -10,7 +10,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>safequery</ToolCommandName>
     <PackageId>SafeQuery</PackageId>
-    <Version>0.1.0</Version>
+    <Version>0.0.0-dev</Version>
     <Authors>Llewellyn Falco</Authors>
     <Description>Read-only SQL Server query CLI that rejects anything but SELECT, plus a schema-to-Mermaid diagram generator.</Description>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
