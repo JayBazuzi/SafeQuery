@@ -1,0 +1,39 @@
+# Project
+
+SafeQuery is a .NET global tool (`safequery`) that runs read-only SQL against a SQL Server database and prints the result as a Markdown table. It can also generate a Mermaid/SVG diagram of the database schema.
+It exists so AI coding agents (and humans in a hurry) can look at real data without being able to change it.
+
+
+# Decisions
+
+1. Only a single `SELECT` or `WITH` statement is accepted. Anything else fails with `Read-Only Queries Only`.
+1. Write keywords (`INSERT`, `UPDATE`, `DELETE`, `EXEC`, `INTO`, ...) are rejected by a keyword filter. This is not a security boundary: users must connect with a login that only has read permission.
+1. Connection string lookup order: `~/.safequery/settings.json`, then the `ConnectionStrings__DefaultConnection` environment variable, then an interactive prompt whose answer is saved to `~/.safequery/settings.json` (owner read/write only on Unix).
+1. Output is a Markdown table; errors go to stderr with exit code 1.
+1. `--create-diagram [path]` writes a Mermaid markdown file and a matching `.svg`. Commas inside types are rewritten (`decimal(18,2)` becomes `decimal(18-2)`) and relationship labels are blanked so Mermaid can parse and render it.
+1. Target framework: `net10.0`.
+1. Package ID: `SafeQuery`, command name: `safequery`.
+1. License: Apache-2.0.
+
+
+# Project Structure
+
+Scripts: build_and_test.sh
+Unit tests: use xunit
+CI: Github actions
+    build and test (uses the script) on push
+    publish, on github deploy, version from tag (example tag: v1.2.3)
+Nuget: publishes the tool package to nuget.org on GitHub release, with the version taken from the tag (v1.2.3 becomes 1.2.3), using nuget.org trusted publishing (OIDC, no long-lived API key).
+
+
+# Release Checklist
+
+Work through these in order; see the git history for what is done.
+
+1. Repo scaffolding: `.gitattributes`, `AGENTS.md`, this file, `SafeQuery.sln`.
+1. Tests: extract logic out of `Program`, add xunit project (safety filter first).
+1. Safety hardening: keyword false positives, row limit, timeout flag, no secrets in errors.
+1. Build and CI: `build_and_test.sh`, `build.yml`, `publish.yml`, version from tag.
+1. Packaging: icon, repository metadata, SourceLink, symbols, package ID check, local install test.
+1. README: badges, `--help`, exit codes, read-only login guidance.
+1. CLI polish: `--help`, `--version`, System.CommandLine.
