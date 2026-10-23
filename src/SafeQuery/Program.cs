@@ -1,9 +1,5 @@
-using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 using DbToMermaid;
 using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Configuration;
 using Naiad;
 
 namespace SafeQuery;
@@ -23,7 +19,7 @@ public static class Program
         string? sql;
         try
         {
-            sql = ResolveSql(args);
+            sql = SqlInput.Resolve(args, Console.In, Console.IsInputRedirected);
         }
         catch (Exception ex)
         {
@@ -68,13 +64,13 @@ public static class Program
             await using var connection = new SqlConnection(builder.ConnectionString);
             await connection.OpenAsync();
             var markdown = await SqlServerToMermaid.RenderMarkdown(connection);
-            var parseable = MakeMermaidParseable(markdown);
-            var narrow = BlankRelationshipLabels(parseable);
+            var parseable = DiagramText.MakeMermaidParseable(markdown);
+            var narrow = DiagramText.BlankRelationshipLabels(parseable);
             await File.WriteAllTextAsync(path, narrow);
             Console.WriteLine($"Diagram written to {path}");
 
             var svgPath = Path.ChangeExtension(path, ".svg");
-            await File.WriteAllTextAsync(svgPath, Mermaid.Render(ExtractMermaid(narrow)));
+            await File.WriteAllTextAsync(svgPath, Mermaid.Render(DiagramText.ExtractMermaid(narrow)));
             Console.WriteLine($"SVG written to {svgPath}");
             return 0;
         }
@@ -93,115 +89,6 @@ public static class Program
         }
     }
 
-    // SqlServerToMermaid output that Mermaid cannot parse: commas inside types (e.g. "decimal(18,2)").
-    private static string MakeMermaidParseable(string markdown)
-    {
-        return Regex.Replace(markdown, @"\((\d+),(\d+)\)", "($1-$2)");
-    }
-
-    // Relationship labels (long FK constraint names) make the diagram very wide, so they are blanked.
-    private static string BlankRelationshipLabels(string markdown)
-    {
-        return Regex.Replace(markdown, @"(\|\|--o\{ ""[^""]+"") : ""[^""]*""", "$1 : \"\"");
-    }
-
-    private static string ExtractMermaid(string markdown)
-    {
-        var match = Regex.Match(markdown, @"```mermaid\s*\r?\n(.*?)```", RegexOptions.Singleline);
-        return match.Success ? match.Groups[1].Value : markdown;
-    }
-
-    private static string? ResolveSql(string[] args)
-    {
-        for (var i = 0; i < args.Length; i++)
-        {
-            if (args[i] == "-f")
-            {
-                if (i + 1 >= args.Length)
-                {
-                    throw new InvalidOperationException("-f flag requires a file path argument");
-                }
-
-                var path = args[i + 1];
-                if (!File.Exists(path))
-                {
-                    throw new InvalidOperationException($"SQL file not found: {path}");
-                }
-
-                return File.ReadAllText(path);
-            }
-        }
-
-        var positional = args.FirstOrDefault(a => a != "-f");
-        if (!string.IsNullOrWhiteSpace(positional))
-        {
-            return positional;
-        }
-
-        if (Console.IsInputRedirected)
-        {
-            return Console.In.ReadToEnd();
-        }
-
-        throw new InvalidOperationException(
-            "No SQL provided. Pass SQL as an argument, use -f <path>, or pipe SQL via stdin.");
-    }
-
-    private static string GetSettingsPath()
-    {
-        return Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".safequery", "settings.json");
-    }
-
-    // Order: user-level settings file, then the ConnectionStrings__DefaultConnection env var, then an interactive prompt (saved to the file).
-    private static string GetConnectionString()
-    {
-        var settingsPath = GetSettingsPath();
-        var configuration = new ConfigurationBuilder()
-            .AddEnvironmentVariables()
-            .AddJsonFile(settingsPath, optional: true, reloadOnChange: false)
-            .Build();
-
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
-        if (!string.IsNullOrWhiteSpace(connectionString))
-        {
-            return connectionString;
-        }
-
-        return PromptAndSaveConnectionString(settingsPath);
-    }
-
-    private static string PromptAndSaveConnectionString(string settingsPath)
-    {
-        if (Console.IsInputRedirected)
-        {
-            throw new InvalidOperationException(
-                $"Connection string not configured. Run safequery once interactively (without piped input) to be prompted, " +
-                $"create {settingsPath}, or set the ConnectionStrings__DefaultConnection environment variable.");
-        }
-
-        Console.Error.WriteLine($"No connection string found. It will be saved to {settingsPath}");
-        Console.Error.Write("SQL Server connection string: ");
-        var entered = Console.ReadLine();
-        if (string.IsNullOrWhiteSpace(entered))
-        {
-            throw new InvalidOperationException("No connection string entered.");
-        }
-
-        entered = entered.Trim();
-        Directory.CreateDirectory(Path.GetDirectoryName(settingsPath)!);
-        var json = JsonSerializer.Serialize(
-            new { ConnectionStrings = new { DefaultConnection = entered } },
-            new JsonSerializerOptions { WriteIndented = true });
-        File.WriteAllText(settingsPath, json);
-        if (!OperatingSystem.IsWindows())
-        {
-            File.SetUnixFileMode(settingsPath, UnixFileMode.UserRead | UnixFileMode.UserWrite);
-        }
-
-        return entered;
-    }
-
     private static async Task RunQueryAsync(string connectionString, string sql)
     {
         await using var connection = new SqlConnection(connectionString);
@@ -214,45 +101,23 @@ public static class Program
 
         await using var reader = await command.ExecuteReaderAsync();
 
-        var columnNames = new string[reader.FieldCount];
-        for (var i = 0; i < reader.FieldCount; i++)
-        {
-            columnNames[i] = reader.GetName(i);
-        }
-
-        var output = new StringBuilder();
-        output.Append("| ").Append(string.Join(" | ", columnNames)).Append(" |\n");
-        output.Append("| ").Append(string.Join(" | ", columnNames.Select(_ => "---"))).Append(" |\n");
-
-        var rowCount = 0;
+        var columnNames = Enumerable.Range(0, reader.FieldCount).Select(reader.GetName).ToList();
+        var rows = new List<string[]>();
         while (await reader.ReadAsync())
         {
-            rowCount++;
             var values = new string[reader.FieldCount];
             for (var i = 0; i < reader.FieldCount; i++)
             {
-                var value = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString() ?? string.Empty;
-                values[i] = EscapeMarkdownCell(value);
+                values[i] = reader.IsDBNull(i) ? string.Empty : reader.GetValue(i)?.ToString() ?? string.Empty;
             }
 
-            output.Append("| ").Append(string.Join(" | ", values)).Append(" |\n");
+            rows.Add(values);
         }
 
-        Console.Write(output.ToString());
-
-        if (rowCount == 0)
-        {
-            Console.WriteLine("_(0 rows)_");
-        }
+        Console.Write(MarkdownTable.Render(columnNames, rows));
     }
 
-    private static string EscapeMarkdownCell(string value)
-    {
-        return value
-            .Replace("\\", "\\\\")
-            .Replace("|", "\\|")
-            .Replace("\r\n", " ")
-            .Replace("\n", " ")
-            .Replace("\r", " ");
-    }
+    private static string GetConnectionString() =>
+        ConnectionStringResolver.Resolve(
+            ConnectionStringResolver.DefaultSettingsPath(), Console.In, Console.Error, Console.IsInputRedirected);
 }
