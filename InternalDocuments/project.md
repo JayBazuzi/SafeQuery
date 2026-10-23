@@ -32,8 +32,20 @@ Work through these in order; see the git history for what is done.
 
 1. Repo scaffolding: `.gitattributes`, `AGENTS.md`, this file, `SafeQuery.sln`.
 1. Tests: extract logic out of `Program`, add xunit project (safety filter first).
-1. Safety hardening: keyword false positives, row limit, timeout flag, no secrets in errors.
+1. Safety hardening: deferred, see TODO below.
 1. Build and CI: `build_and_test.sh`, `build.yml`, `publish.yml`, version from tag.
 1. Packaging: icon, repository metadata, SourceLink, symbols, package ID check, local install test.
 1. README: badges, `--help`, exit codes, read-only login guidance.
 1. CLI polish: `--help`, `--version`, System.CommandLine.
+
+
+# TODO
+
+## Safety hardening (deferred)
+
+1. Keywords inside string literals are rejected (`WHERE name = 'delete'`). The filter should ignore string literals and bracketed identifiers. Flip `KnownFalsePositive_KeywordInsideStringLiteral` in `ReadOnlyGuardTests` when fixed.
+1. `sp_` and `xp_` never match, because `_` is a word character and `\bsp_\b` needs a boundary after it. `SELECT * FROM sp_who` is accepted today. Flip `KnownGap_SpPrefixIsNotActuallyBlocked` when fixed.
+1. Consider also blocking `OPENROWSET`, `OPENQUERY` and `OPENDATASOURCE`.
+1. Back the README claim "writes are rejected inside a transaction" with a test, or run queries with `ApplicationIntent=ReadOnly` / a rolled-back transaction.
+1. Add a row limit and a `--timeout` flag (the timeout is hard-coded to 30 seconds and there is no row cap).
+1. Never echo the connection string or password in error output.
