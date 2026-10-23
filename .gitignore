@@ -1,0 +1,8 @@
+bin/
+obj/
+*.user
+local.settings.json
+.vs/
+.idea/
+*.nupkg
+artifacts/

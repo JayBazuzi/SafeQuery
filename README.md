@@ -1,0 +1,48 @@
+# SafeQuery
+
+A small .NET CLI that runs **read-only** SQL against a SQL Server database and prints the result as a Markdown table. It also generates a Mermaid/SVG diagram of the database schema.
+
+It was built so AI coding agents (and humans in a hurry) can look at real data without being able to change it.
+
+> **Safety note:** SafeQuery rejects anything that isn't a single `SELECT`/`WITH` statement and blocks write keywords (`INSERT`, `UPDATE`, `DELETE`, `EXEC`, `INTO`, ...). This is a keyword filter, not a security boundary. Always connect with a database login that only has read permission.
+
+## Install
+
+```bash
+dotnet tool install --global SafeQuery
+```
+
+## Configure
+
+SafeQuery looks for the connection string in this order:
+
+1. `~/.safequery/settings.json`
+1. The `ConnectionStrings__DefaultConnection` environment variable
+1. An interactive prompt, whose answer is saved to `~/.safequery/settings.json`
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=...;Database=...;User Id=...;Password=...;"
+  }
+}
+```
+
+If SQL is piped in on stdin there is no terminal to prompt on, so run `safequery` once interactively first (or set the env var).
+
+## Usage
+
+```bash
+safequery "select top 10 * from dbo.company"   # inline query
+safequery -f query.sql                         # from a file
+type query.sql | safequery                     # piped stdin
+
+safequery --create-diagram                     # writes ./database-schema.md and .svg
+safequery --create-diagram docs/schema.md      # custom path
+```
+
+Writes are rejected every time, including inside a transaction.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
