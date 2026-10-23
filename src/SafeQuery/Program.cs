@@ -8,8 +8,19 @@ public static class Program
 {
     private const string DefaultDiagramPath = "./InternalDocuments/database-schema.md";
 
+    private static string? _environmentName;
+
     public static async Task<int> Main(string[] args)
     {
+        try
+        {
+            (_environmentName, args) = EnvironmentOption.Extract(args);
+        }
+        catch (Exception ex)
+        {
+            return await ReportFailure(ex.Message);
+        }
+
         var diagramIndex = Array.IndexOf(args, "--create-diagram");
         if (diagramIndex >= 0)
         {
@@ -120,5 +131,8 @@ public static class Program
 
     private static string GetConnectionString() =>
         ConnectionStringResolver.Resolve(
-            ConnectionStringResolver.DefaultSettingsPath(), Directory.GetCurrentDirectory(), Console.In, Console.Error, Console.IsInputRedirected);
+            ConnectionStringResolver.DefaultSettingsPath(), Directory.GetCurrentDirectory(), Console.In,
+            Console.Error,
+            Console.IsInputRedirected,
+            environmentName: _environmentName);
 }
