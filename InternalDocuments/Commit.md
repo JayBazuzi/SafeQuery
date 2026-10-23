@@ -29,3 +29,4 @@ validation / responses:
 * unrecognized risk or intention name -> `error: ...` on stderr, exit code 1
 * missing/empty message -> `error: message is required` on stderr, exit code 1
 * wrong number of arguments -> usage on stderr, exit code 2
+* intention that is not a code change (environment, test, documentation) with a risk other than completely_safe -> `error: ...` on stderr, exit code 1. Only refactor, feature and bug may use any risk.

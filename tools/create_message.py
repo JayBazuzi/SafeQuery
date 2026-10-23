@@ -22,12 +22,18 @@ INTENTIONS = {
     "documentation": "d",
 }
 
+# Only these intentions change code behavior, so only they may carry a risk
+# other than completely_safe.
+CODE_INTENTIONS = {"refactor", "feature", "bug"}
+
 
 def create_message(risk, intention, message):
     if risk not in RISKS:
         raise ValueError(f"unrecognized risk '{risk}' (expected one of: {', '.join(RISKS)})")
     if intention not in INTENTIONS:
         raise ValueError(f"unrecognized intention '{intention}' (expected one of: {', '.join(INTENTIONS)})")
+    if intention not in CODE_INTENTIONS and risk != "completely_safe":
+        raise ValueError(f"intention '{intention}' is not a code change, so risk must be completely_safe")
     if not message or not message.strip():
         raise ValueError("message is required")
     return f"{RISKS[risk]} {INTENTIONS[intention]} {message.strip()}"
