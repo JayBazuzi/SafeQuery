@@ -6,7 +6,7 @@ namespace SafeQuery;
 
 public static class Program
 {
-    private const string DefaultDiagramPath = "./database-schema.md";
+    private const string DefaultDiagramPath = "./InternalDocuments/database-schema.md";
 
     public static async Task<int> Main(string[] args)
     {
@@ -66,6 +66,7 @@ public static class Program
             var markdown = await SqlServerToMermaid.RenderMarkdown(connection);
             var parseable = DiagramText.MakeMermaidParseable(markdown);
             var narrow = DiagramText.BlankRelationshipLabels(parseable);
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
             await File.WriteAllTextAsync(path, narrow);
             Console.WriteLine($"Diagram written to {path}");
 

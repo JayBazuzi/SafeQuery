@@ -10,7 +10,7 @@ It exists so AI coding agents (and humans in a hurry) can look at real data with
 1. Write keywords (`INSERT`, `UPDATE`, `DELETE`, `EXEC`, `INTO`, ...) are rejected by a keyword filter. This is not a security boundary: users must connect with a login that only has read permission.
 1. Connection string lookup order: the `Repositories` entry in `~/.safequery/settings.json` for the current directory or the nearest parent up to the git root (outside a git repo, the current directory only), then the `ConnectionStrings__DefaultConnection` environment variable, then an interactive prompt (showing an example connection string) whose answer is saved under the git root in `~/.safequery/settings.json` (owner read/write only on Unix). The old global `ConnectionStrings:DefaultConnection` entry in the file is no longer read.
 1. Output is a Markdown table; errors go to stderr with exit code 1.
-1. `--create-diagram [path]` writes a Mermaid markdown file and a matching `.svg`. Commas inside types are rewritten (`decimal(18,2)` becomes `decimal(18-2)`) and relationship labels are blanked so Mermaid can parse and render it.
+1. `--create-diagram [path]` writes a Mermaid markdown file and a matching `.svg`; the path defaults to `./InternalDocuments/database-schema.md` and missing folders are created. Commas inside types are rewritten (`decimal(18,2)` becomes `decimal(18-2)`) and relationship labels are blanked so Mermaid can parse and render it.
 1. Target framework: `net10.0`.
 1. Package ID: `SafeQuery`, command name: `safequery`.
 1. License: Apache-2.0.
