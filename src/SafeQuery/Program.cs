@@ -119,5 +119,5 @@ public static class Program
 
     private static string GetConnectionString() =>
         ConnectionStringResolver.Resolve(
-            ConnectionStringResolver.DefaultSettingsPath(), Console.In, Console.Error, Console.IsInputRedirected);
+            ConnectionStringResolver.DefaultSettingsPath(), Directory.GetCurrentDirectory(), Console.In, Console.Error, Console.IsInputRedirected);
 }

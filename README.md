@@ -20,14 +20,16 @@ dotnet tool install --global SafeQuery
 
 SafeQuery looks for the connection string in this order:
 
-1. `~/.safequery/settings.json`
+1. `~/.safequery/settings.json`, using the entry for the current directory or the nearest parent up to the git root (outside a git repo, the current directory only)
 1. The `ConnectionStrings__DefaultConnection` environment variable
-1. An interactive prompt, whose answer is saved to `~/.safequery/settings.json`
+1. An interactive prompt (with an example connection string), whose answer is saved to `~/.safequery/settings.json` under the git root
+
+Each repo gets its own connection, so different repos can point at different databases.
 
 ```json
 {
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=...;Database=...;User Id=...;Password=...;"
+  "Repositories": {
+    "/Users/me/Github/MyApp": "Server=...;Database=...;User Id=...;Password=...;"
   }
 }
 ```
