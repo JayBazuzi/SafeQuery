@@ -1,5 +1,9 @@
 # SafeQuery
 
+[![build](https://github.com/isidore/SafeQuery/actions/workflows/build.yml/badge.svg)](https://github.com/isidore/SafeQuery/actions/workflows/build.yml)
+[![NuGet](https://img.shields.io/nuget/v/SafeQuery.svg)](https://www.nuget.org/packages/SafeQuery)
+[![NuGet downloads](https://img.shields.io/nuget/dt/SafeQuery.svg)](https://www.nuget.org/packages/SafeQuery)
+
 A small .NET CLI that runs **read-only** SQL against a SQL Server database and prints the result as a Markdown table. It also generates a Mermaid/SVG diagram of the database schema.
 
 It was built so AI coding agents (and humans in a hurry) can look at real data without being able to change it.
