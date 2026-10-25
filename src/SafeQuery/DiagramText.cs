@@ -10,12 +10,6 @@ internal static class DiagramText
         return Regex.Replace(markdown, @"\((\d+),(\d+)\)", "($1-$2)");
     }
 
-    // Relationship labels (long FK constraint names) make the diagram very wide, so they are blanked.
-    internal static string BlankRelationshipLabels(string markdown)
-    {
-        return Regex.Replace(markdown, @"(\|\|--o\{ ""[^""]+"") : ""[^""]*""", "$1 : \"\"");
-    }
-
     internal static string ExtractMermaid(string markdown)
     {
         var match = Regex.Match(markdown, @"```mermaid\s*\r?\n(.*?)```", RegexOptions.Singleline);

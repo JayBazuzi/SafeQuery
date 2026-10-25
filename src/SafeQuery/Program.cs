@@ -60,18 +60,17 @@ public static class Program
             var hasPath = flagIndex + 1 < args.Length && !args[flagIndex + 1].StartsWith('-');
             var path = hasPath ? args[flagIndex + 1] : DefaultDiagramPath;
             // SMO opens its own connection from connection.ConnectionString, which drops the password after Open unless this is set.
-            var builder = new SqlConnectionStringBuilder(GetConnectionString()) { PersistSecurityInfo = true };
-            await using var connection = new SqlConnection(builder.ConnectionString);
-            await connection.OpenAsync();
-            var markdown = await SqlServerToMermaid.RenderMarkdown(connection);
+            var builder = DatabaseConnection.Prepare(GetConnectionString());
+            builder.PersistSecurityInfo = true;
+            await using var connection = await DatabaseConnection.OpenAsync(builder);
+            var markdown = await SqlServerToMermaid.RenderMarkdown(connection, relationshipLabels: false);
             var parseable = DiagramText.MakeMermaidParseable(markdown);
-            var narrow = DiagramText.BlankRelationshipLabels(parseable);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
-            await File.WriteAllTextAsync(path, narrow);
+            await File.WriteAllTextAsync(path, parseable);
             Console.WriteLine($"Diagram written to {path}");
 
             var svgPath = Path.ChangeExtension(path, ".svg");
-            await File.WriteAllTextAsync(svgPath, Mermaid.Render(DiagramText.ExtractMermaid(narrow)));
+            await File.WriteAllTextAsync(svgPath, Mermaid.Render(DiagramText.ExtractMermaid(parseable)));
             Console.WriteLine($"SVG written to {svgPath}");
             return 0;
         }
@@ -92,8 +91,7 @@ public static class Program
 
     private static async Task RunQueryAsync(string connectionString, string sql)
     {
-        await using var connection = new SqlConnection(connectionString);
-        await connection.OpenAsync();
+        await using var connection = await DatabaseConnection.OpenAsync(DatabaseConnection.Prepare(connectionString));
 
         await using var command = new SqlCommand(sql, connection)
         {
