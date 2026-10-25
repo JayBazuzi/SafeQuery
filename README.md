@@ -36,6 +36,8 @@ Each repo gets its own connection, so different repos can point at different dat
 
 If SQL is piped in on stdin there is no terminal to prompt on, so run `safequery` once interactively first (or set the env var).
 
+Connecting gives up after at most 10 seconds, even if the connection string asks for longer, and the error names the server and database it could not reach.
+
 ## Usage
 
 ```bash
