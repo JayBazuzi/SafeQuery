@@ -45,7 +45,7 @@ safequery "select top 10 * from dbo.company"   # inline query
 safequery -f query.sql                         # from a file
 type query.sql | safequery                     # piped stdin
 
-safequery --create-diagram                     # writes ./InternalDocuments/database-schema.md and .svg
+safequery --create-diagram                     # writes ./InternalDocuments/database-schema.md, .svg and .png
 safequery --create-diagram docs/schema.md      # custom path
 ```
 

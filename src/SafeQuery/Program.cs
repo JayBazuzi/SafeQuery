@@ -70,8 +70,13 @@ public static class Program
             Console.WriteLine($"Diagram written to {path}");
 
             var svgPath = Path.ChangeExtension(path, ".svg");
-            await File.WriteAllTextAsync(svgPath, Mermaid.Render(DiagramText.ExtractMermaid(parseable)));
+            var mermaid = DiagramText.ExtractMermaid(parseable);
+            await File.WriteAllTextAsync(svgPath, Mermaid.Render(mermaid));
             Console.WriteLine($"SVG written to {svgPath}");
+
+            var pngPath = Path.ChangeExtension(path, ".png");
+            SkiaRenderer.RenderPng(mermaid, pngPath);
+            Console.WriteLine($"PNG written to {pngPath}");
             return 0;
         }
         catch (Exception ex)
