@@ -46,6 +46,8 @@ A repo can also hold several named environments. Pick one with `--env <name>`. W
 
 If SQL is piped in on stdin there is no terminal to prompt on, so run `safequery` once interactively first (or set the env var).
 
+Connecting gives up after at most 10 seconds, even if the connection string asks for longer, and the error names the server and database it could not reach.
+
 ## Usage
 
 ```bash
@@ -53,7 +55,7 @@ safequery "select top 10 * from dbo.company"   # inline query
 safequery -f query.sql                         # from a file
 type query.sql | safequery                     # piped stdin
 
-safequery --create-diagram                     # writes ./InternalDocuments/database-schema.md and .svg
+safequery --create-diagram                     # writes ./InternalDocuments/database-schema.md, .svg and .png
 safequery --create-diagram docs/schema.md      # custom path
 safequery --env prod "select count(*) from dbo.company"  # named environment
 ```

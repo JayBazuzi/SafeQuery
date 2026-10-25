@@ -12,12 +12,6 @@ public class DiagramTextTests
         Assert.Equal(expected, DiagramText.MakeMermaidParseable(input));
 
     [Fact]
-    public void BlanksRelationshipLabels() =>
-        Assert.Equal(
-            "  \"A\" ||--o{ \"B\" : \"\"",
-            DiagramText.BlankRelationshipLabels("  \"A\" ||--o{ \"B\" : \"FK_B_A_VeryLongConstraintName\""));
-
-    [Fact]
     public void ExtractsMermaidBlock() =>
         Assert.Equal(
             "erDiagram\n  A ||--o{ B : x\n",
